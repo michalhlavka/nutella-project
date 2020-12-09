@@ -25,17 +25,21 @@ abstract class AbstractRepository extends EntityRepository
 		}
 
 		$qb = $this->createQueryBuilder('e')
-			->select(['e.' . $value, 'e.' . $key])
 			->resetDQLPart('from')
 			->from($this->getEntityName(), 'e', 'e.' . $key);
 
+		$select = [];
 		foreach ($criteria as $k => $v) {
 			if (is_array($v)) {
 				$qb->andWhere(sprintf('e.%s IN(:%s)', $k, $k))->setParameter($k, array_values($v));
 			} else {
 				$qb->andWhere(sprintf('e.%s = :%s', $k, $k))->setParameter($k, $v);
 			}
+
+			$select[] = 'e.' . $k;
 		}
+
+        $qb->select(array_merge(['e.' . $value, 'e.' . $key], $select));
 
 		foreach ($orderBy as $column => $order) {
 			$qb->addOrderBy($column, $order);
@@ -44,6 +48,5 @@ abstract class AbstractRepository extends EntityRepository
 		return array_map(function ($row) {
 			return reset($row);
 		}, $qb->getQuery()->getArrayResult());
-	}
 
 }
